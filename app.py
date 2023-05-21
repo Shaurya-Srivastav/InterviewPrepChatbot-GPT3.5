@@ -134,25 +134,17 @@
 
 
 
-
-
-
-
-
-
-
-
 import streamlit as st
 import openai
 
 # Authenticate with OpenAI
-openai.api_key = 'YOUR_API_KEY'
+openai.api_key = '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'
 
 # Function to interact with the ChatGPT model
 def ask_question(question, chat_log=None):
     if chat_log is None:
         chat_log = []
-        
+
     response = openai.Completion.create(
         engine='text-davinci-003',
         prompt=chat_log + [question],
@@ -161,10 +153,10 @@ def ask_question(question, chat_log=None):
         n=1,
         stop=None,
     )
-    
+
     chat_log.append(question)
     chat_log.append(response.choices[0].text.strip())
-    
+
     return response.choices[0].text.strip(), chat_log
 
 # Function to provide feedback on user's responses
@@ -177,50 +169,56 @@ def provide_feedback(question, user_input):
         feedback = "Impressive! Your classroom management strategies seem effective."
     else:
         feedback = "Your response shows potential, but it can be improved. Try to provide more specific examples or elaborate further."
-        
+
     return feedback
 
 # Streamlit app
 def main():
     st.title('History Teacher Interview Chatbot')
-    
-    # Initialize the chat log
-    chat_log = []
-    
+
     # Ask the user for their name
     user_name = st.text_input("Enter your name:")
-    
+
     if user_name:
-        st.write(f"Hello, {user_name}! Let's begin the interview.")
-        
-        # List of interview questions
-        questions = [
-            "Tell me about your teaching experience in history.",
-            "Tell me about your approach to lesson planning in history.",
-            "How do you manage classroom behavior and maintain an effective learning environment?",
-            "How do you incorporate technology into your history lessons?",
-            "How do you assess student learning and provide feedback?",
-            "How do you promote inclusivity and diversity in your history classroom?"
-        ]
-        
-        # Loop to ask interview questions
-        for i, question in enumerate(questions):
-            user_input = st.text_input("You:", key=f"question_{i}").strip()
-            
-            if user_input:
-                # Ask the question to the model
-                response, chat_log = ask_question(user_input, chat_log)
-                
-                # Display the model's response
-                st.write("ChatGPT:", response)
-                
-                # Provide feedback on the user's response
-                if len(chat_log) % 2 == 0:
+        st.write(f"Hi {user_name}! Let's begin the interview.")
+
+        # Conversation context
+        chat_log = []
+
+        with st.form(key='interview_form'):
+            # Loop to ask interview questions
+            questions = [
+                "What got you interested in teaching history?",
+                "What makes you stand out as a history teacher?",
+                "How do you incorporate technology into your history lessons?",
+                "Tell me about a challenging situation you faced as a history teacher and how you handled it.",
+                "How do you assess student learning and provide feedback?",
+                "How do you promote inclusivity and diversity in your history classroom?"
+            ]
+
+            for i, question in enumerate(questions):
+                st.write("Bot:", question)
+                user_input = st.text_input("You:", key=f"question_{i}").strip()
+
+                if user_input:
+                    # Save user input to the conversation log
+                    chat_log.append(f"{user_name}: {user_input}")
+
+                    # Ask the question to the model
+                    response, chat_log = ask_question(question, chat_log)
+
+                    # Display the model's response
+                    st.write("Bot:", response)
+
+                    # Provide feedback on the user's response
                     feedback = provide_feedback(question, user_input)
                     st.write("Feedback:", feedback)
-                
+
+            # Submit button
+            st.form_submit_button("Submit")
+
     else:
         st.write("Please enter your name to begin the interview.")
-        
+
 if __name__ == "__main__":
     main()

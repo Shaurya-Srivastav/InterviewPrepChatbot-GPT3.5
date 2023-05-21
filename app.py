@@ -2,7 +2,7 @@ import streamlit as st
 import openai
 
 # Authenticate with OpenAI
-openai.api_key = 'YOUR_API_KEY'
+openai.api_key = ''
 
 # Function to interact with the ChatGPT model
 def ask_question(question, chat_log=None):
@@ -11,9 +11,9 @@ def ask_question(question, chat_log=None):
 
     response = openai.Completion.create(
         engine='text-davinci-003',
-        prompt=chat_log + [question],
-        max_tokens=500,
-        temperature=0.7,
+        prompt= chat_log + [question],
+        max_tokens=400,
+        temperature=1.0,
         n=1,
         stop=None,
     )
@@ -25,23 +25,18 @@ def ask_question(question, chat_log=None):
 
 # Function to provide feedback on user's responses
 def provide_feedback(question, user_input):
-    # Provide your own implementation or use external libraries for advanced feedback analysis
-    # You can train a custom feedback analysis model or use pre-trained models like sentiment analysis
-    # Here, we'll use a simple rule-based approach as an example
-    if "teaching experience" in question.lower() and "relevant" in user_input.lower():
-        feedback = "Great! Your teaching experience is relevant to the position."
-    elif "lesson planning" in question.lower() and "thorough" in user_input.lower():
-        feedback = "Excellent! Your approach to lesson planning is thorough and well-structured."
-    elif "classroom management" in question.lower() and "effective" in user_input.lower():
-        feedback = "Impressive! Your classroom management strategies seem effective."
-    else:
-        feedback = "Your response shows potential, but it can be improved. Try to provide more specific examples or elaborate further."
-
+    feedback_prompt = f"Provide feedback as if I answered this on an interview question. Give me ways to improve my answer: : '{question}'\n\nUser response: '{user_input}'"
+    feedback = ''
+    while len(feedback.split()) < 150:
+        response, _ = ask_question(feedback_prompt)
+        feedback += response
+        
     return feedback
+
 
 # Streamlit app
 def main():
-    st.title('History Teacher Interview Chatbot')
+    st.title('Job Interview Chatbot')
 
     # Ask the user for their name
     user_name = st.text_input("Enter your name:")
@@ -53,42 +48,46 @@ def main():
         chat_log = []
         question_index = st.session_state.get('question_index', 0)
 
-        # List of interview questions
-        questions = [
-            "What got you interested in teaching history?",
-            "What makes you stand out as a history teacher?",
-            "How do you incorporate technology into your history lessons?",
-            "Tell me about a challenging situation you faced as a history teacher and how you handled it.",
-            "How do you assess student learning and provide feedback?",
-            "How do you promote inclusivity and diversity in your history classroom?"
-        ]
+        # Ask the user for their job interest
+        job_interest = st.text_input("Enter your job interest (e.g., History Teacher, Software Engineer, Cook):")
 
-        if question_index < len(questions):
-            if st.button("Next"):
-                question_index += 1
-                st.session_state['question_index'] = question_index
-                st.empty()
+        if job_interest:
+            st.write(f"Great! Let's generate some interview questions based on your interest in {job_interest}.")
 
-            question = questions[question_index]
-            st.write("Question:", question)
-            user_input = st.text_input("Your response:", key=f"question_{question_index}").strip()
+            # Generate interview questions based on job interest using the model
+            generated_questions, _ = ask_question(f"Generate interview questions for a {job_interest}")
+            questions = generated_questions.split("\n")
 
-            if user_input:
-                # Save user input to the conversation log
-                chat_log.append(f"{user_name}: {user_input}")
+            if question_index < len(questions):
+                if st.button("Next"):
+                    question_index += 1
+                    st.session_state['question_index'] = question_index
+                    st.empty()
 
-                # Provide feedback on the user's response
-                feedback = provide_feedback(question, user_input)
-                st.write("Feedback:", feedback)
+                question = questions[question_index]
+                st.write("Question:", question)
+                user_input = st.text_input("Your response:", key=f"question_{question_index}").strip()
 
-                # Generate a longer "better response" to the question using the model
-                better_response = ""
-                while len(better_response.split()) < 350:
-                    response, _ = ask_question(question, chat_log[:-1])
-                    better_response = response
+                if user_input:
+                    # Save user input to the conversation log
+                    chat_log.append(f"{user_name}: {user_input}")
 
-                st.write("Better response:")
-                st.write(better_response)
+                    # Provide feedback on the user's response
+                    feedback = provide_feedback(question, user_input)
+                    st.subheader("Feedback:")
+                    st.write(feedback)
+
+                     # Generate a more creative and better-suited "better response" to the question using the model
+                    better_response_prompt = f"Generate a more creative and improved response to this question: '{question}'\n\nUser response: '{user_input}'\n\nBetter response (at least 400 words):"
+                    better_response = ''
+                    while len(better_response.split()) < 250:
+                        response, _ = ask_question(better_response_prompt, chat_log[:-1])
+                        better_response += response
+
+                    st.subheader("**Better response:**")
+                    st.write(better_response)
+        else:
+            st.write("Please enter your job interest to generate interview questions.")
 
     else:
         st.write("Please enter your name to begin the interview.")

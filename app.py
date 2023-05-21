@@ -2,7 +2,7 @@ import streamlit as st
 import openai
 
 # Authenticate with OpenAI
-openai.api_key = ''
+openai.api_key = API_KEY
 
 # Function to interact with the ChatGPT model
 def ask_question(question, chat_log=None):
